@@ -1,6 +1,6 @@
 <template>
   <div>
-    <UButton label="Open" @click="isOpen = true" />
+    <UButton label="Открыть" @click="isOpen = true"/>
 
     <USlideover v-model="isOpen">
       <div class="p-4 flex-1">
@@ -10,9 +10,13 @@
   </div>
 </template>
 
-<script setup lang="ts">
-const isOpen = ref(false);
+<script>
 export default {
+  data() {
+    return {
+      isOpen: false
+    };
+  },
   name: 'slide-over'
 }
 </script>
