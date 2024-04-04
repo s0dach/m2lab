@@ -5,7 +5,7 @@
         <div class="w-[313px] border-[#e9eaed] rounded-md border p-[10px]">
           <div class="max-w-xl lg:max-w-lg flex justify-between items-center">
             <div class="flex items-center">
-              <h2 class="w-26 h-5 flex-grow-0 font-semibold text-left text-black text-sm">{{ leadDate.leadName }}</h2>
+              <h2 class="w-26 h-5 flex-grow-0 font-semibold text-left text-black text-sm">{{ leadDate?.leadName }}</h2>
               <!--          <div class="ml-3 cursor-pointer">-->
               <!--            <svg width="18" height="19" viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">-->
               <!--              <path-->
@@ -104,14 +104,17 @@
           <div class="mt-2">
             <h3 class="text-xs text-[#595759]">Канал поступления</h3>
             <h3 class="text-sm text-[#006eff]" v-if="!isEdit">{{ channel.title }}</h3>
-            <UDropdown v-if="isEdit" :items="[leadReference.leadSources]" mode="hover" :popper="{ placement: 'bottom-start' }"
+            <UDropdown v-if="isEdit" :items="[leadReference.leadSources]" mode="hover"
+                       :popper="{ placement: 'bottom-start' }"
                        class="w-full ">
               <UButton color="white" :label="channel.title"
                        trailing-icon="i-heroicons-chevron-down-20-solid"
                        class="ring-opacity-0 flex justify-between px-[12px] py-[6px] bg-white text-black font-thin border border-[#c8cbd1] rounded-md hover:bg-[#c8cbd1] w-full"/>
             </UDropdown>
           </div>
-          <UButton @click="saveBoard" class="mt-2.5 flex justify-center w-full" variant="solid">Сохранить</UButton>
+          <UButton @click="saveBoard(leadDate, manager, date)" class="mt-2.5 flex justify-center w-full"
+                   variant="solid">Сохранить
+          </UButton>
         </div>
       </div>
     </slide-over>
@@ -119,164 +122,59 @@
   <div v-else>Загрузка...</div>
 </template>
 
-<script>
-import {defineComponent, ref, onMounted} from 'vue';
-import axios from 'axios';
+<script setup>
+import {reactive, ref, onMounted} from 'vue';
 import DatePicker from '@/components/UI/DatePicker.vue';
 import SlideOver from '@/components/UI/SlideOver.vue';
-import {format} from 'date-fns';
-import {fi} from "date-fns/locale";
+import {formatDate} from "@/components/utils.js";
+import {fetchLeadCards, saveBoard} from "@/components/api.js";
 
-export default defineComponent({
-  components: {DatePicker, SlideOver},
-  setup() {
-    const date = ref(new Date());
-    const isEdit = ref(false);
-    const initials = 'Васильев Алексей';
-    const birthDate = '10.09.1991';
-    const card = ref([]);
-    let manager = ref(null);
-    let channel = ref(null);
+const date = ref(new Date());
+const isEdit = ref(false);
+const birthDate = '10.09.1991';
+let manager = reactive({});
+let channel = reactive({});
 
-    let leadDate = ref(null);
-    let leadReference = ref(null);
-    let isLoading = ref(true);
+let leadDate = reactive({});
+let leadReference = reactive({});
+let isLoading = ref(true);
 
-    const formatDate = (date) => {
-      const day = String(new Date(date).getDate()).padStart(2, '0');
-      const month = String(new Date(date).getMonth() + 1).padStart(2, '0');
-      const year = new Date(date).getFullYear();
+const formatNumber = (phoneNumber) => {
+  return phoneNumber.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+}
 
-      const hours = String(new Date(date).getHours()).padStart(2, '0');
-      const minutes = String(new Date(date).getMinutes()).padStart(2, '0');
-      const seconds = String(new Date(date).getSeconds()).padStart(2, '0');
-
-      return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
-    }
-
-// Пример использования:
-    const now = new Date();
-    console.log(formatDate(now)); // Выводит текущую дату и время в формате DD.MM.YYYY HH:MM:SS
-
-    const formatNumber = (phoneNumber) => {
-      return phoneNumber.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
-    }
-
-    const settings = [
-      [{
-        label: 'Редактировать поля',
-        id: 0,
-      },
-        {
-          label: 'Настройка отображения',
-          id: 1
-        }]
-    ];
-
-    const handleItemClick = (item) => {
-      if (item.id === 0) {
-        isEdit.value = !isEdit.value;
-      }
-    }
-    const fetchLeadCard = async () => {
-      try {
-        isLoading.value = true;
-        const response = await axios.get('https://crm.m2lab.ru/api/internal/demo/demoLeadCardAccess');
-
-        const managerList = response.data.reference?.managerList ?? [];
-        const leadBoards = response.data.reference?.leadBoards ?? [];
-        const leadSources = response.data.reference?.leadSources ?? [];
-
-        const transformedManagerList = managerList.map(person => ({
-          label: person.name,
-          avatar: {
-            src: person.avatar || ''
-          }
-        }));
-
-        const transformLeadBoards = leadBoards.map(board => ({
-          label: board.title,
-        }));
-
-        const transformLeadSources = leadSources.map(board => ({
-          label: board.title,
-        }));
-
-        leadDate.value = response.data.leadData;
-        leadReference.value = {
-          ...response.data.reference,
-          managerList: transformedManagerList,
-          leadBoards: transformLeadBoards,
-          leadSources: transformLeadSources
-        };
-        console.log(response)
-        manager.value = response.data.reference.managerList.find(item => item.id === leadDate.value.manager);
-        channel.value = response.data.reference.leadSources.find(item => item.id === leadDate.value.leadSource);
-      } catch (error) {
-        console.error('Ошибка при получении данных:', error);
-      } finally {
-        isLoading.value = false;
-      }
-    }
-
-    const saveBoard = () => {
-      const data = {
-        "createdAt": formatDate(date.value),
-        "manager": manager.value,
-        "leadStatus": leadDate.value.leadStatus,
-        "leadSource": leadDate.value.leadSource,
-        "board": leadDate.value.board,
-        "leadName": leadDate.value.leadName,
-        "object": {
-          "object": leadDate.value.object,
-          "rooms": leadDate.value.rooms,
-          "objectNumber": leadDate.value.objectNumber,
-        },
-        "contacts":{
-          "phone": leadDate.value.contacts.phone,
-          "withoutPhone": false,
-          "email": leadDate.value.contacts.email,
-          "socialType":leadDate.value.contacts.socialType,
-          "nickName":leadDate.value.contacts.nickName,
-          "additionalContacts":[
-            {
-              "contact": leadDate.value.contacts.additionalContacts[0].contact,
-              "description":leadDate.value.contacts.additionalContacts[0].description
-            }
-          ]
-        }
-      }
-      try {
-        const response = axios.post('https://crm.m2lab.ru/api/internal/demo/demoLeadCardAccess', data).then(res => console.log(res))
-        console.log(response)
-      } catch (error) {
-        console.error('Ошибка при получении данных:', error);
-      } finally {
-      //   тут обработку
-      }
-
-    }
-
-    onMounted(() => {
-      fetchLeadCard();
-    });
-
-    return {
-      date,
-      formatDate,
-      settings,
-      isEdit,
-      initials,
-      birthDate,
-      channel,
-      handleItemClick,
-      card,
-      leadDate,
-      leadReference,
-      isLoading,
-      formatNumber,
-      manager, saveBoard
-    }
+const settings = [
+  [{
+    label: 'Редактировать поля',
+    id: 0,
   },
+    {
+      label: 'Настройка отображения',
+      id: 1
+    }]
+];
+
+const handleItemClick = (item) => {
+  if (item.id === 0) {
+    isEdit.value = !isEdit.value;
+  }
+}
+
+const setupState = async () => {
+  try {
+    isLoading.value = true;
+    const data = await fetchLeadCards();
+    leadDate = data.leadDate;
+    leadReference = data.leadReference;
+    manager = data.manager;
+    channel = data.channel;
+  } catch (e) {
+    console.log('err', e)
+  } finally {
+    isLoading.value = false;
+  }
+}
+onMounted(async () => {
+  await setupState();
 });
 </script>
