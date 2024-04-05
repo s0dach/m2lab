@@ -5,7 +5,7 @@
         <div class="w-[313px] border-[#e9eaed] rounded-md border p-[10px]">
           <div class="max-w-xl lg:max-w-lg flex justify-between items-center">
             <div class="flex items-center">
-              <h2 class="w-26 h-5 flex-grow-0 font-semibold text-left text-black text-sm">{{ leadDate?.leadName }}</h2>
+              <h2 class="w-26 h-5 flex-grow-0 font-[600] text-left text-[#252525] text-sm">{{ leadDate?.leadName }}</h2>
               <!--          <div class="ml-3 cursor-pointer">-->
               <!--            <svg width="18" height="19" viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">-->
               <!--              <path-->
@@ -36,7 +36,9 @@
               </UDropdown>
             </div>
           </div>
-          <h3 class="text-[0.625rem]">Обновлено: {{ leadDate.updatedAt }}</h3>
+          <div class="mt-[6px]">
+            <h3 class="text-[10px] text-[#595759]">Обновлено: {{ leadDate.updatedAt.split(' ')[0] }}</h3>
+          </div>
           <div class="mt-2.5 text-[#595759] flex justify-between">
             <div>
               <h3 class="text-xs">Дата создания</h3>
@@ -59,13 +61,10 @@
             </div>
           </div>
           <div class="mt-2.5 text-[#595759] w-full">
-            <h3 class="text-xs"></h3>
-            <UDropdown :items="[leadReference.managerList]" mode="hover" :popper="{ placement: 'bottom-start' }"
-                       class="w-full ">
-              <UButton color="white" :label="manager.name"
-                       trailing-icon="i-heroicons-chevron-down-20-solid"
-                       class="ring-opacity-0 flex justify-between px-[12px] py-[6px] bg-white text-black font-thin border border-[#c8cbd1] rounded-md hover:bg-[#c8cbd1] w-full"/>
-            </UDropdown>
+            <h3 class="text-xs">Менеджер</h3>
+            <USelectMenu v-model="manager" :options="leadReference.managerList">
+
+            </USelectMenu>
           </div>
           <div>
             <h2 class="w-26 h-5 flex-grow-0 font-semibold text-left text-black text-sm mt-2.5">Основной контакт</h2>
@@ -84,16 +83,14 @@
           <div class="mt-2">
             <div class="flex justify-between align-center">
               <h3 class="text-xs text-[#595759]">Номер телефона</h3>
-              <div class="flex align-center" v-if="isEdit">
-                <UCheckbox :model-value="false" inputClass="w-[10px] h-[10px] rounded-none">
-                  <template #label>
-                    <span class="text-xs text-[#595759] ms-0">нет телефона</span>
-                  </template>
+              <div class="flex" v-if="isEdit">
+                <UCheckbox @click="noPhone" :model-value="noPhoneBoolean" inputClass="w-[10px] h-[10px] rounded-none mr-[4px]">
                 </UCheckbox>
+                <span class="h-[20px] text-xs text-[#595759] font-normal">нет телефона</span>
               </div>
             </div>
             <h3 class="text-sm text-[#006eff]" v-if="!isEdit">{{ formatNumber(leadDate.contacts.phone) }}</h3>
-            <UInput class="ring-opacity-0" v-model="leadDate.contacts.phone" v-if="isEdit"/>
+            <UInput :disabled="noPhoneBoolean" class="ring-opacity-0" v-model="leadDate.contacts.phone" v-if="isEdit"/>
           </div>
           <div class="mt-2">
             <h3 class="text-xs text-[#595759]">Доп. номер телефона</h3>
@@ -112,7 +109,7 @@
                        class="ring-opacity-0 flex justify-between px-[12px] py-[6px] bg-white text-black font-thin border border-[#c8cbd1] rounded-md hover:bg-[#c8cbd1] w-full"/>
             </UDropdown>
           </div>
-          <UButton @click="saveBoard(leadDate, manager, date)" class="mt-2.5 flex justify-center w-full"
+          <UButton @click="noPhone" class="mt-2.5 flex justify-center w-full bg-[#006eff]"
                    variant="solid">Сохранить
           </UButton>
         </div>
@@ -138,11 +135,20 @@ let channel = reactive({});
 let leadDate = reactive({});
 let leadReference = reactive({});
 let isLoading = ref(true);
+let noPhoneBoolean = ref(false);
 
 const formatNumber = (phoneNumber) => {
   return phoneNumber.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
 }
 
+const noPhone = () => {
+  noPhoneBoolean.value = !noPhoneBoolean.value;
+  console.log(noPhoneBoolean.value)
+}
+
+const selectedManager = () => {
+
+}
 const settings = [
   [{
     label: 'Редактировать поля',

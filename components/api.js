@@ -9,6 +9,7 @@ export const fetchLeadCards = async () => {
         const leadSources = response.data.reference?.leadSources ?? [];
 
         const transformedManagerList = managerList.map(person => ({
+            id: person.id,
             label: person.name,
             avatar: {
                 src: person.avatar || ''
@@ -30,9 +31,8 @@ export const fetchLeadCards = async () => {
             leadBoards: transformLeadBoards,
             leadSources: transformLeadSources
         };
-        const manager = response.data.reference.managerList.find(item => item.id === leadDate.manager);
+        const manager = leadReference.managerList.find(item => item.id === leadDate.manager);
         const channel = response.data.reference.leadSources.find(item => item.id === leadDate.leadSource);
-
         return {
             leadDate,
             leadReference,
